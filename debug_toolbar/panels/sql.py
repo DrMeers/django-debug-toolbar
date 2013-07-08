@@ -15,7 +15,7 @@ from debug_toolbar.utils.tracking import replace_call
 
 
 # Inject our tracking cursor
-@replace_call(BaseDatabaseWrapper.cursor)
+@replace_call(BaseDatabaseWrapper.cursor, cls=BaseDatabaseWrapper)
 def cursor(func, self):
     result = func(self)
 
@@ -137,7 +137,7 @@ class SQLDebugPanel(DebugPanel):
         if self._queries:
             width_ratio_tally = 0
             factor = int(256.0 / (len(self._databases) * 2.5))
-            for n, db in enumerate(self._databases.itervalues()):
+            for n, db in enumerate(self._databases.values()):
                 rgb = [0, 0, 0]
                 color = n % 3
                 rgb[color] = 256 - n / 3 * factor
@@ -195,7 +195,7 @@ class SQLDebugPanel(DebugPanel):
                 self._queries[(i - 1)][1]['ends_trans'] = True
 
         self.record_stats({
-            'databases': sorted(self._databases.items(), key=lambda x: -x[1]['time_spent']),
+            'databases': sorted(list(self._databases.items()), key=lambda x: -x[1]['time_spent']),
             'queries': [q for a, q in self._queries],
             'sql_time': self._sql_time,
         })

@@ -6,7 +6,7 @@ this into the urlconf for the request.
 """
 try:
     from django.conf.urls import patterns, url
-except ImportError: # django < 1.4
+except ImportError: # django < 1.4 -- remove now?
     from django.conf.urls.defaults import patterns, url
 
 _PREFIX = '__debug__'

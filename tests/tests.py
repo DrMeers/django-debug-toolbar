@@ -1,5 +1,9 @@
+from __future__ import unicode_literals
 from __future__ import with_statement
-import thread
+try:
+    import _thread
+except ImportError:
+    import thread as _thread
 
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -7,6 +11,7 @@ from django.db import connection
 from django.http import HttpResponse
 from django.test import TestCase, RequestFactory
 from django.template import Template, Context
+from django.utils import six
 from django.utils import unittest
 
 from debug_toolbar.middleware import DebugToolbarMiddleware
@@ -30,12 +35,12 @@ class Settings(object):
         self._orig = {}
 
     def __enter__(self):
-        for k, v in self.overrides.iteritems():
+        for k, v in self.overrides.items():
             self._orig[k] = getattr(settings, k, self.NotDefined)
             setattr(settings, k, v)
 
     def __exit__(self, exc_type, exc_value, traceback):
-        for k, v in self._orig.iteritems():
+        for k, v in self._orig.items():
             if v is self.NotDefined:
                 delattr(settings, k)
             else:
@@ -48,7 +53,7 @@ class BaseTestCase(TestCase):
         response = HttpResponse()
         toolbar = DebugToolbar(request)
 
-        DebugToolbarMiddleware.debug_toolbars[thread.get_ident()] = toolbar
+        DebugToolbarMiddleware.debug_toolbars[_thread.get_ident()] = toolbar
 
         self.request = request
         self.response = response
@@ -104,7 +109,7 @@ class DebugToolbarTestCase(BaseTestCase):
         with Settings(INTERNAL_IPS=['127.0.0.1'], DEBUG=True):
             middleware.process_request(request)
 
-            self.assertFalse(isinstance(request.urlconf, basestring))
+            self.assertFalse(isinstance(request.urlconf, six.string_types))
 
             self.assertTrue(hasattr(request.urlconf.urlpatterns[1], '_callback_str'))
             self.assertEquals(request.urlconf.urlpatterns[-1]._callback_str, 'tests.views.execute_sql')
@@ -119,7 +124,7 @@ class DebugToolbarTestCase(BaseTestCase):
             request.urlconf = 'tests.urls'
             middleware.process_request(request)
 
-            self.assertFalse(isinstance(request.urlconf, basestring))
+            self.assertFalse(isinstance(request.urlconf, six.string_types))
 
             self.assertTrue(hasattr(request.urlconf.urlpatterns[1], '_callback_str'))
             self.assertEquals(request.urlconf.urlpatterns[-1]._callback_str, 'tests.views.execute_sql')
@@ -132,7 +137,7 @@ class DebugToolbarTestCase(BaseTestCase):
         with Settings(INTERNAL_IPS=['127.0.0.1'], DEBUG=True):
             middleware.process_request(request)
 
-            self.assertFalse(isinstance(request.urlconf, basestring))
+            self.assertFalse(isinstance(request.urlconf, six.string_types))
 
             self.assertTrue(hasattr(request.urlconf.urlpatterns[1], '_callback_str'))
             self.assertEquals(request.urlconf.urlpatterns[-1]._callback_str, 'tests.views.execute_sql')
@@ -145,7 +150,7 @@ class DebugToolbarTestCase(BaseTestCase):
         middleware = DebugToolbarMiddleware()
         with Settings(INTERNAL_IPS=['127.0.0.1'], DEBUG=True):
             middleware.process_request(request)
-            self.assertFalse(isinstance(request.urlconf, basestring))
+            self.assertFalse(isinstance(request.urlconf, six.string_types))
 
     def _resolve_stats(self, path):
         # takes stats from RequestVars panel
@@ -203,7 +208,6 @@ class SQLPanelTestCase(BaseTestCase):
     def test_recording(self):
         panel = self.toolbar.get_panel(SQLDebugPanel)
         self.assertEquals(len(panel._queries), 0)
-
         list(User.objects.all())
 
         # ensure query was logged
@@ -263,7 +267,7 @@ class TemplatePanelTestCase(BaseTestCase):
         t.render(c)
         # ensure the query was NOT logged
         self.assertEquals(len(sql_panel._queries), 0)
-        ctx = u''.join(template_panel.templates[0]['context'])
+        ctx = ''.join(template_panel.templates[0]['context'])
         self.assertIn('<<queryset of auth.User>>', ctx)
         self.assertIn('<<triggers database query>>', ctx)
 
@@ -310,7 +314,7 @@ class TrackingTestCase(BaseTestCase):
 
         callbacks['before'] = {}
 
-        @pre_dispatch(TrackingTestCase.class_func)
+        @pre_dispatch(TrackingTestCase.class_func, cls=TrackingTestCase)
         def test(**kwargs):
             foo.update(kwargs)
 
@@ -335,7 +339,7 @@ class TrackingTestCase(BaseTestCase):
 
         callbacks['before'] = {}
 
-        @pre_dispatch(TrackingTestCase.class_method)
+        @pre_dispatch(TrackingTestCase.class_method, cls=TrackingTestCase)
         def test(**kwargs):
             foo.update(kwargs)
 
@@ -380,7 +384,7 @@ class TrackingTestCase(BaseTestCase):
 
         callbacks['after'] = {}
 
-        @post_dispatch(TrackingTestCase.class_func)
+        @post_dispatch(TrackingTestCase.class_func, cls=TrackingTestCase)
         def test(**kwargs):
             foo.update(kwargs)
 

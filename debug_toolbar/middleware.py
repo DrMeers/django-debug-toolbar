@@ -1,13 +1,16 @@
 """
 Debug Toolbar middleware
 """
+from __future__ import unicode_literals
+
 import imp
 import threading
 
 from django.conf import settings
 from django.http import HttpResponseRedirect
 from django.shortcuts import render_to_response
-from django.utils.encoding import smart_unicode
+from django.utils import six
+from django.utils.encoding import smart_text
 from django.utils.importlib import import_module
 
 import debug_toolbar.urls
@@ -48,7 +51,7 @@ class DebugToolbarMiddleware(object):
         self.show_toolbar = self._show_toolbar  # default
 
         # The tag to attach the toolbar to
-        self.tag = u'</body>'
+        self.tag = '</body>'
 
         if hasattr(settings, 'DEBUG_TOOLBAR_CONFIG'):
             show_toolbar_callback = settings.DEBUG_TOOLBAR_CONFIG.get(
@@ -58,7 +61,7 @@ class DebugToolbarMiddleware(object):
 
             tag = settings.DEBUG_TOOLBAR_CONFIG.get('TAG', None)
             if tag:
-                self.tag = u'</' + tag + u'>'
+                self.tag = '</' + tag + '>'
 
     def _show_toolbar(self, request):
         if getattr(settings, 'TEST', False):
@@ -77,7 +80,7 @@ class DebugToolbarMiddleware(object):
         __traceback_hide__ = True
         if self.show_toolbar(request):
             urlconf = getattr(request, 'urlconf', settings.ROOT_URLCONF)
-            if isinstance(urlconf, basestring):
+            if isinstance(urlconf, six.string_types):
                 urlconf = import_module(getattr(request, 'urlconf', settings.ROOT_URLCONF))
 
             if urlconf not in self._urlconfs:
@@ -135,9 +138,9 @@ class DebugToolbarMiddleware(object):
             for panel in toolbar.panels:
                 panel.process_response(request, response)
             response.content = replace_insensitive(
-                smart_unicode(response.content),
+                smart_text(response.content),
                 self.tag,
-                smart_unicode(toolbar.render_toolbar() + self.tag))
+                smart_text(toolbar.render_toolbar() + self.tag))
             if response.get('Content-Length', None):
                 response['Content-Length'] = len(response.content)
         del self.__class__.debug_toolbars[ident]

@@ -1,6 +1,6 @@
 try:
     from django.utils.functional import cached_property
-except ImportError:  # Django < 1.4
+except ImportError:  # Django < 1.4 -- remove now?
     class cached_property(object):
         """
         Decorator that creates converts a method with a single

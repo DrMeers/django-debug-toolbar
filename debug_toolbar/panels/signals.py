@@ -4,6 +4,7 @@ from django.core.signals import (request_started, request_finished,
 from django.db.models.signals import (class_prepared, pre_init, post_init,
     pre_save, post_save, pre_delete, post_delete, post_syncdb)
 from django.dispatch.dispatcher import WEAKREF_TYPES
+from django.utils import six
 from django.utils.translation import ugettext_lazy as _, ungettext
 from django.utils.importlib import import_module
 
@@ -75,7 +76,7 @@ class SignalDebugPanel(DebugPanel):
 
     def process_response(self, request, response):
         signals = []
-        for name, signal in sorted(self.signals.items(), key=lambda x: x[0]):
+        for name, signal in sorted(list(self.signals.items()), key=lambda x: x[0]):
             if signal is None:
                 continue
             receivers = []
@@ -87,12 +88,28 @@ class SignalDebugPanel(DebugPanel):
 
                 receiver = getattr(receiver, '__wraps__', receiver)
                 receiver_name = getattr(receiver, '__name__', str(receiver))
-                if getattr(receiver, 'im_self', None) is not None:
-                    text = "%s.%s" % (getattr(receiver.im_self, '__class__', type).__name__, receiver_name)
-                elif getattr(receiver, 'im_class', None) is not None:
-                    text = "%s.%s" % (receiver.im_class.__name__, receiver_name)
+                receiver_self = getattr(receiver, '__self__', None)
+                if not six.PY3:
+                    if getattr(receiver, 'im_self', None) is not None:
+                        receiver_class = getattr(
+                            receiver.im_self, '__class__', type)
+                        text = "%s.%s" % (
+                            receiver_class.__name__, receiver_name)
+                    elif getattr(receiver, 'im_class', None) is not None:
+                        text = "%s.%s" % (
+                            receiver.im_class.__name__, receiver_name)
+                    else:
+                        text = "%s" % receiver_name
                 else:
-                    text = "%s" % receiver_name
+                    if receiver_self is not None:
+                        receiver_class = getattr(
+                            receiver_self, '__class__', type)
+                        text = "%s.%s" % (
+                            receiver_class.__name__,
+                            receiver_name
+                        )
+                    else:
+                        text = "%s" % receiver_name
                 receivers.append(text)
             signals.append((name, signal, receivers))
 

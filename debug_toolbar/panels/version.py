@@ -7,6 +7,7 @@ from django.utils.datastructures import SortedDict
 from django.utils.importlib import import_module
 
 from debug_toolbar.panels import DebugPanel
+import collections
 
 
 class VersionDebugPanel(DebugPanel):
@@ -36,7 +37,7 @@ class VersionDebugPanel(DebugPanel):
             app = import_module(app)
             if hasattr(app, 'get_version'):
                 get_version = app.get_version
-                if callable(get_version):
+                if isinstance(get_version, collections.Callable):
                     version = get_version()
                 else:
                     version = get_version

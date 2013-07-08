@@ -62,7 +62,7 @@ class TemplateDebugPanel(DebugPanel):
         for context_layer in context_data.dicts:
             temp_layer = {}
             if hasattr(context_layer, 'items'):
-                for key, value in context_layer.items():
+                for key, value in list(context_layer.items()):
                     # Replace any request elements - they have a large
                     # unicode representation and the request data is
                     # already made available from the Request Vars panel.

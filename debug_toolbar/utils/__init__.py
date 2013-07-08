@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 import inspect
 import os.path
 import django
@@ -6,6 +8,7 @@ import sys
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.html import escape
+from django.utils import six
 from django.utils.importlib import import_module
 from django.utils.safestring import mark_safe
 from django.views.debug import linebreak_iter
@@ -25,7 +28,7 @@ hide_django_sql = config.get('HIDE_DJANGO_SQL', True)
 def get_module_path(module_string):
     try:
         module = import_module(module_string)
-    except ImportError, e:
+    except ImportError as e:
         raise ImproperlyConfigured(
             'Error importing HIDDEN_STACKTRACE_MODULES: %s' % (e,))
     else:
@@ -34,14 +37,15 @@ def get_module_path(module_string):
             source_path = os.path.dirname(source_path)
         return os.path.realpath(source_path)
 
-hidden_paths = map(
+hidden_paths = list(map(
     get_module_path,
     config.get(
         'HIDDEN_STACKTRACE_MODULES', (
-            'SocketServer', 'threading', 'wsgiref', 'debug_toolbar',
+            ('socketserver' if six.PY3 else 'SocketServer'),
+            'threading', 'wsgiref', 'debug_toolbar',
         )
     )
-)
+))
 def omit_path(path):
     for hidden_path in hidden_paths:
         if hidden_path in path:
@@ -79,14 +83,14 @@ def tidy_stacktrace(stack):
 def render_stacktrace(trace):
     stacktrace = []
     for frame in trace:
-        params = map(escape, frame[0].rsplit(os.path.sep, 1) + list(frame[1:]))
-        params_dict = dict((unicode(idx), v) for idx, v in enumerate(params))
+        params = list(map(escape, frame[0].rsplit(os.path.sep, 1) + list(frame[1:])))
+        params_dict = dict((str(idx), v) for idx, v in enumerate(params))
         try:
-            stacktrace.append(u'<span class="path">%(0)s/</span>'
-                              u'<span class="file">%(1)s</span>'
-                              u' in <span class="func">%(3)s</span>'
-                              u'(<span class="lineno">%(2)s</span>)\n'
-                              u'  <span class="code">%(4)s</span>'
+            stacktrace.append('<span class="path">%(0)s/</span>'
+                              '<span class="file">%(1)s</span>'
+                              ' in <span class="func">%(3)s</span>'
+                              '(<span class="lineno">%(2)s</span>)\n'
+                              '  <span class="code">%(4)s</span>'
                               % params_dict)
         except KeyError:
             # This frame doesn't have the expected format, so skip it and move on to the next one

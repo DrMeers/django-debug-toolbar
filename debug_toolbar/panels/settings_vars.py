@@ -25,5 +25,5 @@ class SettingsVarsDebugPanel(DebugPanel):
 
     def process_response(self, request, response):
         self.record_stats({
-            'settings': SortedDict(sorted(get_safe_settings().items(), key=lambda s: s[0])),
+            'settings': SortedDict(sorted(list(get_safe_settings().items()), key=lambda s: s[0])),
         })
